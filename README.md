@@ -1,13 +1,13 @@
 # flutter_glide
 
-基于Flutter中`Image`类扩展的网络图片加载与本地图片加载,设计思路与灵感取于 [Cached network image](https://github.com/renefloor/flutter_cached_network_image) 和 [Glide](https://github.com/bumptech/glide).
+基于Flutter中`Image`类扩展的网络图片加载与本地图片加载,设计思路与灵感取于 [Cached network image](https://github.com/renefloor/flutter_cached_network_image) 和 [Glide](https://github.com/bumptech/glide).
 
 
 ## 插件的优点
 - 使用`instantiateImageCodec`方法中的`targetWidth`跟`targetHeight`参数实现对源图片按需裁剪,不占用多余内存资源
 - 单纯扩展`Image`类的功能与不足,对项目代码没有侵入性
 - 支持缓存自定义实现,目前默认缓存使用[flutter_cache_manager](https://pub.dartlang.org/packages/flutter_cache_manager)
-- 支持大部分图床按需裁剪图片的需求
+- 支持大部分图床按需裁剪图片的需求
 ## 简单使用
 ### 网络图片加载
 你可以直接使用 Glide.network，与官方一致。
