@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_glide/flutter_glide.dart';
 
-void main() => runApp(MyApp());
+void main() {
+  Glide.pathBuilder = (url, width, height, devicePixelRatio) {
+    if (width != null) {
+      return '$url?x-oss-process=image/resize,w_${(width * devicePixelRatio).toInt()}';
+    } else if (height != null) {
+      return '$url?x-oss-process=image/resize,h_${(height * devicePixelRatio).toInt()}';
+    } else {
+      return url;
+    }
+  };
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
@@ -60,10 +71,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
-    Glide.pathBuilder = (url, size, devicePixelRatio) => size.height >
-            size.width
-        ? '$url?x-oss-process=image/resize,h_${(size.height * devicePixelRatio).toInt()}'
-        : '$url?x-oss-process=image/resize,w_${(size.width * devicePixelRatio).toInt()}';
     super.initState();
   }
 
@@ -81,7 +88,7 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
+      body: SingleChildScrollView(
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
         child: Column(
@@ -105,15 +112,12 @@ class _MyHomePageState extends State<MyHomePage> {
               'You have pushed the button this many times:',
             ),
             Glide.network(
-              "https://chuneng-dev.oss-cn-shenzhen.aliyuncs.com/pmpp-test.jpg",
-              width: 100,
-              height: 200,
+              "http://adown.oss-cn-shenzhen.aliyuncs.com/images/sbp/huawei.png",
               fit: BoxFit.cover,
+              checkCache: true,
             ),
             Image.network(
-              "https://chuneng-dev.oss-cn-shenzhen.aliyuncs.com/pmpp-test.jpg",
-              width: 100,
-              height: 200,
+              "http://adown.oss-cn-shenzhen.aliyuncs.com/images/sbp/huawei.png",
               fit: BoxFit.cover,
             ),
           ],

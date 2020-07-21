@@ -1,6 +1,6 @@
 name: flutter_glide
 description: 基于Flutter中`Image`类扩展的网络图片加载与本地图片加载
-version: 0.0.1
+version: 0.0.2
 author: mxpazyj
 homepage:
 
@@ -10,7 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_cache_manager: ^1.1.1
+  flutter_cache_manager: ^1.1.3
+  path_provider: ^1.4.5
+
 
 dev_dependencies:
   flutter_test:

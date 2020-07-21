@@ -1,169 +1,274 @@
 library flutter_glide;
 
+export 'src/image_provider.dart';
+export 'src/base_cache_manager.dart';
+
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
-import 'base_cache_manager.dart';
-import 'glide_image_provider.dart';
+import 'src/base_cache_manager.dart';
+import 'src/cache_image_provider.dart';
+import 'src/image_provider.dart';
 
-typedef NetworkImagePathBuilder = String Function(
-    String url, Size size, double devicePixelRatio);
+typedef NetworkImageUrlBuilder = String Function(
+  String url,
+  double width,
+  double height,
+  double devicePixelRatio,
+);
 
-class Glide extends StatefulWidget {
-  static ImageCacheManager _cacheManage = DefaultImageCacheManager();
+class Glide {
+  static BaseCacheManager _cacheManage = DefaultImageCacheManager();
 
-  static ImageCacheManager get cacheManager =>
+  static BaseCacheManager get cacheManager =>
       _cacheManage ?? DefaultImageCacheManager();
 
-  static NetworkImagePathBuilder _pathBuilder;
+  static NetworkImageUrlBuilder _pathBuilder;
 
-  static set cacheManager(ImageCacheManager cacheManager) =>
+  static set cacheManager(BaseCacheManager cacheManager) =>
       _cacheManage = cacheManager;
 
-  static set pathBuilder(NetworkImagePathBuilder builder) =>
+  static set pathBuilder(NetworkImageUrlBuilder builder) =>
       _pathBuilder = builder;
 
-  static NetworkImagePathBuilder get pathBuilder =>
+  static NetworkImageUrlBuilder get pathBuilder =>
       _pathBuilder ?? (url, size, devicePixelRatio) => url;
 
-  final String image;
-  final File file;
-  final WidgetBuilder placeholder;
-  final ImageLoadingBuilder loadingBuilder;
-  final ImageFrameBuilder frameBuilder;
-  final String semanticLabel;
-  final bool excludeFromSemantics;
-  final double width;
-  final double height;
-  final Color color;
-  final BlendMode colorBlendMode;
-  final BoxFit fit;
-  final AlignmentGeometry alignment;
-  final ImageRepeat repeat;
-  final Rect centerSlice;
-  final bool matchTextDirection;
-  final bool gaplessPlayback;
-  final FilterQuality filterQuality;
+  static Widget image(
+    ImageProvider image, {
+    Key key,
+    WidgetBuilder placeholder,
+    ImageLoadingBuilder loadingBuilder,
+    String semanticLabel,
+    bool excludeFromSemantics = false,
+    double width,
+    double height,
+    Color color,
+    BlendMode colorBlendMode,
+    BoxFit fit = BoxFit.cover,
+    AlignmentGeometry alignment = Alignment.center,
+    ImageRepeat repeat = ImageRepeat.noRepeat,
+    Rect centerSlice,
+    bool matchTextDirection = false,
+    bool gaplessPlayback = false,
+    FilterQuality filterQuality = FilterQuality.low,
+  }) {
+    return SizeImage((context, maxWidth, maxHeight) => Image(
+          key: key,
+          loadingBuilder: loadingBuilder,
+          semanticLabel: semanticLabel,
+          excludeFromSemantics: excludeFromSemantics,
+          width: width,
+          height: height,
+          color: color,
+          colorBlendMode: colorBlendMode,
+          fit: fit,
+          alignment: alignment,
+          repeat: repeat,
+          centerSlice: centerSlice,
+          matchTextDirection: matchTextDirection,
+          gaplessPlayback: gaplessPlayback,
+          filterQuality: filterQuality,
+          image: GlideImage.resizeIfNeeded(
+              maxWidth?.toInt(), maxHeight?.toInt(), image),
+          frameBuilder: (BuildContext context, Widget child, int frame,
+              bool wasSynchronouslyLoaded) {
+            if (placeholder == null || wasSynchronouslyLoaded) return child;
+            return AnimatedFadeOutFadeIn(
+              target: child,
+              placeholder: placeholder(context),
+              isTargetLoaded: frame != null,
+              fadeOutDuration: const Duration(milliseconds: 300),
+              fadeOutCurve: Curves.easeOut,
+              fadeInDuration: const Duration(milliseconds: 500),
+              fadeInCurve: Curves.easeIn,
+            );
+          },
+        ));
+  }
 
-  Glide(
-      {Key key,
-      this.image,
-      this.file,
-      this.placeholder,
-      this.loadingBuilder,
-      this.frameBuilder,
-      this.semanticLabel,
-      this.excludeFromSemantics = false,
-      this.width,
-      this.height,
-      this.color,
-      this.colorBlendMode,
-      this.fit,
-      this.alignment = Alignment.center,
-      this.repeat = ImageRepeat.noRepeat,
-      this.centerSlice,
-      this.matchTextDirection = false,
-      this.gaplessPlayback = false,
-      this.filterQuality = FilterQuality.low})
-      : super(key: key);
+  static Widget network(
+    String url, {
+    Key key,
+    WidgetBuilder placeholder,
+    ImageLoadingBuilder loadingBuilder,
+    String semanticLabel,
+    bool excludeFromSemantics = false,
+    double width,
+    double height,
+    Color color,
+    BlendMode colorBlendMode,
+    BoxFit fit = BoxFit.cover,
+    AlignmentGeometry alignment = Alignment.center,
+    ImageRepeat repeat = ImageRepeat.noRepeat,
+    Rect centerSlice,
+    bool matchTextDirection = false,
+    bool gaplessPlayback = false,
+    FilterQuality filterQuality = FilterQuality.low,
+    bool checkCache = false,
+  }) {
+    return SizeImage((context, maxWidth, maxHeight) => Image(
+          key: key,
+          loadingBuilder: loadingBuilder,
+          semanticLabel: semanticLabel,
+          excludeFromSemantics: excludeFromSemantics,
+          width: width,
+          height: height,
+          color: color,
+          colorBlendMode: colorBlendMode,
+          fit: fit,
+          alignment: alignment,
+          repeat: repeat,
+          centerSlice: centerSlice,
+          matchTextDirection: matchTextDirection,
+          gaplessPlayback: gaplessPlayback,
+          filterQuality: filterQuality,
+          image: GlideImage.resizeIfNeeded(
+            maxWidth?.toInt(),
+            maxHeight?.toInt(),
+            CacheImage(
+              Glide.pathBuilder(
+                url,
+                maxWidth,
+                maxHeight,
+                MediaQuery.of(context).devicePixelRatio,
+              ),
+              checkCache: checkCache,
+              cacheManager: Glide.cacheManager,
+            ),
+          ),
+          frameBuilder: (BuildContext context, Widget child, int frame,
+              bool wasSynchronouslyLoaded) {
+            if (placeholder == null || wasSynchronouslyLoaded) return child;
+            return AnimatedFadeOutFadeIn(
+              target: child,
+              placeholder: placeholder(context),
+              isTargetLoaded: frame != null,
+              fadeOutDuration: const Duration(milliseconds: 300),
+              fadeOutCurve: Curves.easeOut,
+              fadeInDuration: const Duration(milliseconds: 500),
+              fadeInCurve: Curves.easeIn,
+            );
+          },
+        ));
+  }
 
-  Glide.network(this.image,
-      {Key key,
-      this.placeholder,
-      this.loadingBuilder,
-      this.frameBuilder,
-      this.semanticLabel,
-      this.excludeFromSemantics = false,
-      this.width,
-      this.height,
-      this.color,
-      this.colorBlendMode,
-      this.fit,
-      this.alignment = Alignment.center,
-      this.repeat = ImageRepeat.noRepeat,
-      this.centerSlice,
-      this.matchTextDirection = false,
-      this.gaplessPlayback = false,
-      this.filterQuality = FilterQuality.low})
-      : file = null,
-        super(key: key);
-
-  Glide.file(this.file,
-      {Key key,
-      this.placeholder,
-      this.loadingBuilder,
-      this.frameBuilder,
-      this.semanticLabel,
-      this.excludeFromSemantics = false,
-      this.width,
-      this.height,
-      this.color,
-      this.colorBlendMode,
-      this.fit,
-      this.alignment = Alignment.center,
-      this.repeat = ImageRepeat.noRepeat,
-      this.centerSlice,
-      this.matchTextDirection = false,
-      this.gaplessPlayback = false,
-      this.filterQuality = FilterQuality.low})
-      : image = null,
-        super(key: key);
-
-  @override
-  _GlideState createState() => _GlideState();
+  static Widget file(
+    File file, {
+    Key key,
+    WidgetBuilder placeholder,
+    ImageLoadingBuilder loadingBuilder,
+    String semanticLabel,
+    bool excludeFromSemantics = false,
+    double width,
+    double height,
+    Color color,
+    BlendMode colorBlendMode,
+    BoxFit fit = BoxFit.cover,
+    AlignmentGeometry alignment = Alignment.center,
+    ImageRepeat repeat = ImageRepeat.noRepeat,
+    Rect centerSlice,
+    bool matchTextDirection = false,
+    bool gaplessPlayback = false,
+    FilterQuality filterQuality = FilterQuality.low,
+  }) {
+    return SizeImage(
+      (context, maxWidth, maxHeight) => Image(
+        key: key,
+        loadingBuilder: loadingBuilder,
+        semanticLabel: semanticLabel,
+        excludeFromSemantics: excludeFromSemantics,
+        width: width,
+        height: height,
+        color: color,
+        colorBlendMode: colorBlendMode,
+        fit: fit,
+        alignment: alignment,
+        repeat: repeat,
+        centerSlice: centerSlice,
+        matchTextDirection: matchTextDirection,
+        gaplessPlayback: gaplessPlayback,
+        filterQuality: filterQuality,
+        image: GlideImage.resizeIfNeeded(
+          maxWidth?.toInt(),
+          maxHeight?.toInt(),
+          FileImage(file),
+        ),
+        frameBuilder: (BuildContext context, Widget child, int frame,
+            bool wasSynchronouslyLoaded) {
+          if (placeholder == null || wasSynchronouslyLoaded) return child;
+          return AnimatedFadeOutFadeIn(
+            target: child,
+            placeholder: placeholder(context),
+            isTargetLoaded: frame != null,
+            fadeOutDuration: const Duration(milliseconds: 300),
+            fadeOutCurve: Curves.easeOut,
+            fadeInDuration: const Duration(milliseconds: 700),
+            fadeInCurve: Curves.easeIn,
+          );
+        },
+      ),
+    );
+  }
 }
 
-class _GlideState extends State<Glide> {
-  bool haveSize = false;
+typedef WidgetSizeBuilder = Widget Function(
+    BuildContext context, double width, double height);
+
+class SizeImage extends StatefulWidget {
+  final WidgetSizeBuilder builder;
+
+  SizeImage(this.builder);
+
+  @override
+  _SizeImageState createState() => _SizeImageState();
+}
+
+class _SizeImageState extends State<SizeImage> {
+  bool _measured = false;
+  RenderBox _renderBoxRed;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
-        haveSize = true;
+        _measured = true;
       });
     });
   }
 
+  double get width {
+    _renderBoxRed ??= context.findRenderObject();
+    if (_renderBoxRed.size.width >= _renderBoxRed.size.height &&
+        _renderBoxRed.size.width < 4000) {
+      return _renderBoxRed.size.width != 0 ? _renderBoxRed.size.width : null;
+    } else {
+      return null;
+    }
+  }
+
+  double get height {
+    _renderBoxRed ??= context.findRenderObject();
+    if (_renderBoxRed.size.height > _renderBoxRed.size.width &&
+        _renderBoxRed.size.height < 4000) {
+      return _renderBoxRed.size.height != 0 ? _renderBoxRed.size.height : null;
+    } else {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final RenderBox renderBoxRed = context.findRenderObject();
-    return haveSize
-        ? Image(
-            loadingBuilder: widget.loadingBuilder,
-            semanticLabel: widget.semanticLabel,
-            excludeFromSemantics: widget.excludeFromSemantics,
-            width: widget.width,
-            height: widget.height,
-            color: widget.color,
-            colorBlendMode: widget.colorBlendMode,
-            fit: widget.fit,
-            alignment: widget.alignment,
-            repeat: widget.repeat,
-            centerSlice: widget.centerSlice,
-            matchTextDirection: widget.matchTextDirection,
-            gaplessPlayback: widget.gaplessPlayback,
-            filterQuality: widget.filterQuality,
-            image: GlideImageProvider(
-                url: widget.image ?? '', widgetSize: renderBoxRed.size),
-            frameBuilder: widget.frameBuilder ??
-                (BuildContext context, Widget child, int frame,
-                    bool wasSynchronouslyLoaded) {
-                  if (widget.placeholder == null || wasSynchronouslyLoaded)
-                    return child;
-                  return AnimatedFadeOutFadeIn(
-                    target: child,
-                    placeholder: widget.placeholder(context),
-                    isTargetLoaded: frame != null,
-                    fadeOutDuration: const Duration(milliseconds: 300),
-                    fadeOutCurve: Curves.easeOut,
-                    fadeInDuration: const Duration(milliseconds: 500),
-                    fadeInCurve: Curves.easeIn,
-                  );
-                },
+    final ratio = MediaQuery.of(context).devicePixelRatio;
+    return _measured && widget.builder != null
+        ? widget.builder(
+            context,
+            width != null ? width * ratio : null,
+            height != null ? height * ratio : null,
           )
         : Container();
   }
