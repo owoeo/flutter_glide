@@ -2,6 +2,7 @@ library flutter_glide;
 
 export 'src/image_provider.dart';
 export 'src/base_cache_manager.dart';
+export 'src/cache_image_provider.dart';
 
 import 'dart:io';
 
