@@ -1,5 +1,5 @@
 name: flutter_glide
-description: 基于Flutter中`Image`类扩展的网络图片加载与本地图片加载
+description: Network image loading and local image loading based on the `Image` class extension in Flutter
 version: 0.0.2
 author: mxpazyj
 homepage:
